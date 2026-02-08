@@ -19,8 +19,8 @@ contract DeployFlowForgeSafeContractsL1 is Script {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     string rpcUrl = vm.envString("ETH_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_V1");
-    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_V1");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_0");
+    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_0");
 
     function run() public {
         vm.createSelectFork(rpcUrl);
@@ -57,8 +57,8 @@ contract DeployFlowForgeSafeContractsL2 is Script {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     string rpcUrl = vm.envString("ARB_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_V1");
-    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_V1");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_0");
+    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_0");
 
     function run() public {
         vm.createSelectFork(rpcUrl);

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "FlowForgeSafeFactory": "0xd2e676fD8737102CE8D3bfdd21D07F5260e99322",
+        "FlowForgeSafeModule": "0x107135DCf89CB3617B16FA8D0D03e446ED5947bd",
+        "FlowForgeSubdomainRegistry": "0x4F26F3aAFff8527147CC25816274aEA370ba2a8C",
+        "FlowForgeEthUsdcPricer": "0xb11a6FAABd62A66423772497f03390B0992Fb615"
+    },
+    "42161": {
+        "FlowForgeSafeFactory": "0xd2e676fD8737102CE8D3bfdd21D07F5260e99322",
+        "FlowForgeSafeModule": "0x107135DCf89CB3617B16FA8D0D03e446ED5947bd"
+    },
+    "11155111": {
+        "FlowForgeSafeFactory": "0xd2e676fD8737102CE8D3bfdd21D07F5260e99322",
+        "FlowForgeSafeModule": "0x107135DCf89CB3617B16FA8D0D03e446ED5947bd",
+        "FlowForgeSubdomainRegistry": "0xc1dD62Fe69D343e7457E373AE038a1CB541D26d2",
+        "FlowForgeEthUsdcPricer": "0xbdbD8120Ad38085A202f9FB60DBA70e4EE73A17e"
+    },
+    "421614": {
+        "FlowForgeSafeFactory": "0xd2e676fD8737102CE8D3bfdd21D07F5260e99322",
+        "FlowForgeSafeModule": "0x107135DCf89CB3617B16FA8D0D03e446ED5947bd"
+    }
+}

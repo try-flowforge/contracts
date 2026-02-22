@@ -10,17 +10,19 @@ import {FlowForgeSafeModule} from "../src/FlowForgeSafeModule.sol";
 /**
  * @title DeployFlowForgeSafeContractsL1
  * @notice Deploy FlowForgeSafeFactory and FlowForgeSafeModule on L1 using CREATE3
+ * @dev Set RELAYER_ADDRESS in .env (address that will call createSafeWallet; e.g. backend relayer).
  */
 contract DeployFlowForgeSafeContractsL1 is Script {
     address ethSafeProxyFactory = vm.envAddress("ETH_SAFE_PROXY_FACTORY");
     address ethSafeSingleton = vm.envAddress("ETH_SAFE_SINGLETON");
     address executorAddress = vm.envAddress("EXECUTOR_ADDRESS");
+    address relayerAddress = vm.envAddress("RELAYER_ADDRESS");
 
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     string rpcUrl = vm.envString("ETH_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_0");
-    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_0");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_1");
+    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_1");
 
     function run() public {
         vm.createSelectFork(rpcUrl);
@@ -28,7 +30,7 @@ contract DeployFlowForgeSafeContractsL1 is Script {
 
         bytes memory factoryBytecode = abi.encodePacked(
             type(FlowForgeSafeFactory).creationCode,
-            abi.encode(ethSafeProxyFactory, ethSafeSingleton)
+            abi.encode(ethSafeProxyFactory, ethSafeSingleton, relayerAddress)
         );
         address factory = CREATE3.deployDeterministic(factoryBytecode, FACTORY_SALT);
 
@@ -48,17 +50,19 @@ contract DeployFlowForgeSafeContractsL1 is Script {
 /**
  * @title DeployFlowForgeSafeContractsL2
  * @notice Deploy FlowForgeSafeFactory and FlowForgeSafeModule on L2 using CREATE3
+ * @dev Set RELAYER_ADDRESS in .env (address that will call createSafeWallet; e.g. backend relayer).
  */
 contract DeployFlowForgeSafeContractsL2 is Script {
     address arbSafeProxyFactory = vm.envAddress("ARB_SAFE_PROXY_FACTORY");
     address arbSafeSingleton = vm.envAddress("ARB_SAFE_SINGLETON");
     address executorAddress = vm.envAddress("EXECUTOR_ADDRESS");
+    address relayerAddress = vm.envAddress("RELAYER_ADDRESS");
 
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     string rpcUrl = vm.envString("ARB_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_0");
-    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_0");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_1");
+    bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_1");
 
     function run() public {
         vm.createSelectFork(rpcUrl);
@@ -66,7 +70,7 @@ contract DeployFlowForgeSafeContractsL2 is Script {
 
         bytes memory factoryBytecode = abi.encodePacked(
             type(FlowForgeSafeFactory).creationCode,
-            abi.encode(arbSafeProxyFactory, arbSafeSingleton)
+            abi.encode(arbSafeProxyFactory, arbSafeSingleton, relayerAddress)
         );
         address factory = CREATE3.deployDeterministic(factoryBytecode, FACTORY_SALT);
 

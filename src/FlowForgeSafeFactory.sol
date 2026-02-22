@@ -10,6 +10,8 @@ import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.so
  * @notice Factory contract for creating Safe wallets for FlowForge users.
  * @dev This factory deploys Safe wallets using the SafeProxyFactory, following the same
  *      pattern as the Safe Core SDK. Only the owner can create Safes. Supports both Safe and SafeL2 singletons.
+ *      When deployed via CREATE3, msg.sender is the CREATE3 proxy (not the EOA), so pass _initialOwner
+ *      (e.g. relayer) so the correct address can call createSafeWallet.
  */
 contract FlowForgeSafeFactory is Ownable {
     // Maps a user to their Safe wallets.
@@ -22,7 +24,8 @@ contract FlowForgeSafeFactory is Ownable {
 
     event SafeWalletCreated(address indexed user, address indexed safeWallet, uint256 saltNonce);
 
-    constructor(address _safeProxyFactory, address _safeSingleton) Ownable(msg.sender) {
+    /// @param _initialOwner Address that may call createSafeWallet (e.g. relayer). Use address(0) to use msg.sender.
+    constructor(address _safeProxyFactory, address _safeSingleton, address _initialOwner) Ownable(_initialOwner != address(0) ? _initialOwner : msg.sender) {
         require(_safeProxyFactory != address(0), "Zero proxy factory");
         require(_safeSingleton != address(0), "Zero singleton");
         SAFE_PROXY_FACTORY = _safeProxyFactory;

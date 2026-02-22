@@ -36,7 +36,7 @@ Copy env example and set variables used by the deploy scripts:
 
 ```bash
 cp .env.example .env
-# Edit .env: set PRIVATE_KEY, RPC_URL, and for module deploy EXECUTOR_ADDRESS
+# Edit .env: set PRIVATE_KEY, RPC_URL, EXECUTOR_ADDRESS, and RELAYER_ADDRESS (see below)
 ```
 
 ## Deployment
@@ -53,6 +53,10 @@ If the combined script is not supported due to multiple forks, run per chain:
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContractsL1 --broadcast
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContractsL2 --broadcast
 ```
+
+**Relayer must be factory owner:** `createSafeWallet` is `onlyOwner`. The backend relayer sends the create-Safe tx, so it must be the owner. The deploy script uses CREATE3; with CREATE3, `msg.sender` in the factory constructor is the CREATE3 proxy (not your EOA), so you **must** set `RELAYER_ADDRESS` in `.env` to your relayer EOA (the address from `RELAYER_PRIVATE_KEY`). The script passes it as the factory’s initial owner—no `transferOwnership` step needed.
+
+If you already deployed with an older script (no `RELAYER_ADDRESS`), the factory owner is the CREATE3 proxy and you cannot transfer from it. Redeploy using the current script (with `RELAYER_ADDRESS` set); the factory uses salt `v1_1` so it gets a **new** address. Update `contracts/deployments.json` and the backend chain config with the new factory address.
 
 ### 2. ENS subdomain registry + pricer (Ethereum mainnet, one go)
 

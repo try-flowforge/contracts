@@ -7,9 +7,6 @@ Solidity smart contracts built with Foundry. Part of the FlowForge stack—deplo
 | Contract(s) | Chain(s) | Note |
 | ----------- | -------- | ---- |
 | **FlowForgeSafeFactory**, **FlowForgeSafeModule** | Arbitrum Sepolia, Arbitrum One (and optionally Ethereum) | Your app chain(s). Deploy where you run relay and DeFi. |
-| **FlowForgeSubdomainRegistry**, **FlowForgeEthUsdcPricer** | **Ethereum mainnet only** | ENS lives on Ethereum L1; subdomains (e.g. `alice.flowforge.eth`) are registered there. Cannot be deployed on Arbitrum. |
-
-**Arbitrum-only product:** Deploy Safe factory + module on **Arbitrum Sepolia** and **Arbitrum One** only (use script 1 L2 with `ARB_RPC_URL` and `ARB_SAFE_*` for each). Deploy the ENS registry + pricer once on **Ethereum mainnet** so users can claim subdomains; your backend reads subdomain expiry from Ethereum and grants sponsorship on Arbitrum.
 
 ## Project Structure
 
@@ -41,7 +38,7 @@ cp .env.example .env
 
 ## Deployment
 
-### 1. Safe contracts (Ethereum + Arbitrum)
+### Safe contracts (Ethereum + Arbitrum)
 
 ```bash
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContracts --broadcast
@@ -54,26 +51,9 @@ forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeCont
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContractsL2 --broadcast
 ```
 
-**Relayer must be factory owner:** `createSafeWallet` is `onlyOwner`. The backend relayer sends the create-Safe tx, so it must be the owner. The deploy script uses CREATE3; with CREATE3, `msg.sender` in the factory constructor is the CREATE3 proxy (not your EOA), so you **must** set `RELAYER_ADDRESS` in `.env` to your relayer EOA (the address from `RELAYER_PRIVATE_KEY`). The script passes it as the factory’s initial owner—no `transferOwnership` step needed.
+**Relayer must be factory owner:** `createSafeWallet` is `onlyOwner`. The backend relayer sends the create-Safe tx, so it must be the owner. The deploy script uses CREATE3; with CREATE3, `msg.sender` in the factory constructor is the CREATE3 proxy (not your EOA), so you **must** set `RELAYER_ADDRESS` in `.env` to your relayer EOA (the address from `RELAYER_PRIVATE_KEY`). The script passes it as the factory's initial owner—no `transferOwnership` step needed.
 
 If you already deployed with an older script (no `RELAYER_ADDRESS`), the factory owner is the CREATE3 proxy and you cannot transfer from it. Redeploy using the current script (with `RELAYER_ADDRESS` set); the factory uses salt `v1_1` so it gets a **new** address. Update `contracts/deployments.json` and the backend chain config with the new factory address.
-
-### 2. ENS subdomain registry + pricer (Ethereum mainnet, one go)
-
-Requires `ENS_NAME_WRAPPER`, `USDC_ADDRESS`, `CHAINLINK_ETH_USD_FEED`, and `ETH_RPC_URL` in `.env` (see `.env.example`).
-
-```bash
-forge script script/2_deployFlowForgeSubdomainRegistry.s.sol:DeployFlowForgeEnsRegistryAndPricer --broadcast
-```
-
-Deploys **FlowForgeSubdomainRegistry** and **FlowForgeEthUsdcPricer** (2 USDC per 4 weeks; ETH or USDC via Chainlink). After deployment:
-
-1. As owner of the wrapped parent name (e.g. `flowforge.eth`), call **Name Wrapper**: `setApprovalForAll(registry, true)`.
-2. Call **Registry**: `setupDomain(parentNode, pricer, beneficiary, true)`.
-
-Users pay in ETH or USDC for the same expiry (e.g. 5 USDC or equivalent ETH ⇒ 10 weeks). Use **registry.registerWithToken(..., address(0))** to pay in ETH, **registerWithToken(..., USDC)** to pay in USDC; same for **renewWithToken** and batch variants.
-
-The registry supports Option A from the ENS gas-sponsorship plan: users register/renew subdomains; expiry gates off-chain sponsorship (e.g. `remaining_sponsored_txs`).
 
 ### Deploy only Arbitrum (Safe contracts)
 
@@ -86,8 +66,6 @@ forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeCont
 # Arbitrum One: switch .env to mainnet ARB_* and run again
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContractsL2 --broadcast
 ```
-
-ENS registry and pricer stay on Ethereum mainnet (see Chains above).
 
 ## LICENSE
 

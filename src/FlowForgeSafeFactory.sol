@@ -8,10 +8,8 @@ import {Ownable} from "../lib/openzeppelin-contracts/contracts/access/Ownable.so
 /**
  * @title FlowForgeSafeFactory
  * @notice Factory contract for creating Safe wallets for FlowForge users.
- * @dev This factory deploys Safe wallets using the SafeProxyFactory, following the same
- *      pattern as the Safe Core SDK. Only the owner can create Safes. Supports both Safe and SafeL2 singletons.
- *      When deployed via CREATE3, msg.sender is the CREATE3 proxy (not the EOA), so pass _initialOwner
- *      (e.g. relayer) so the correct address can call createSafeWallet.
+ * @dev Owner can create Safes and setExecutor. Executor (relayer) can create Safes for users.
+ *      When deployed via CREATE3, pass _initialOwner so the deployer EOA is owner, not the CREATE3 proxy.
  */
 contract FlowForgeSafeFactory is Ownable {
     // Maps a user to their Safe wallets.
@@ -22,14 +20,38 @@ contract FlowForgeSafeFactory is Ownable {
     address public immutable SAFE_PROXY_FACTORY;
     address public immutable SAFE_SINGLETON;
 
-    event SafeWalletCreated(address indexed user, address indexed safeWallet, uint256 saltNonce);
+    /// @notice Address allowed to call createSafeWallet (e.g. backend relayer). Updatable by owner.
+    address public executor;
 
-    /// @param _initialOwner Address that may call createSafeWallet (e.g. relayer). Use address(0) to use msg.sender.
-    constructor(address _safeProxyFactory, address _safeSingleton, address _initialOwner) Ownable(_initialOwner != address(0) ? _initialOwner : msg.sender) {
+    event SafeWalletCreated(address indexed user, address indexed safeWallet, uint256 saltNonce);
+    event ExecutorSet(address indexed previousExecutor, address indexed newExecutor);
+
+    error NotOwnerOrExecutor();
+
+    modifier onlyOwnerOrExecutor() {
+        if (msg.sender != owner() && msg.sender != executor) revert NotOwnerOrExecutor();
+        _;
+    }
+
+    /// @param _initialOwner Owner (e.g. deployer). Use address(0) to use msg.sender.
+    /// @param _executor Address that may call createSafeWallet (e.g. backend relayer).
+    constructor(address _safeProxyFactory, address _safeSingleton, address _initialOwner, address _executor)
+        Ownable(_initialOwner != address(0) ? _initialOwner : msg.sender)
+    {
         require(_safeProxyFactory != address(0), "Zero proxy factory");
         require(_safeSingleton != address(0), "Zero singleton");
+        require(_executor != address(0), "Zero executor");
         SAFE_PROXY_FACTORY = _safeProxyFactory;
         SAFE_SINGLETON = _safeSingleton;
+        executor = _executor;
+    }
+
+    /// @notice Set the executor (relayer). Only the owner can call this.
+    function setExecutor(address _executor) external onlyOwner {
+        require(_executor != address(0), "Zero executor");
+        address previous = executor;
+        executor = _executor;
+        emit ExecutorSet(previous, _executor);
     }
 
     /**
@@ -41,7 +63,7 @@ contract FlowForgeSafeFactory is Ownable {
      * @param user The user who will own this Safe wallet.
      * @return safeAddress The address of the deployed Safe wallet.
      */
-    function createSafeWallet(address user) external onlyOwner returns (address safeAddress) {
+    function createSafeWallet(address user) external onlyOwnerOrExecutor returns (address safeAddress) {
         require(user != address(0), "Zero user");
 
         // Get the next saltNonce for this user

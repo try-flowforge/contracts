@@ -4,5 +4,14 @@
       "name": "v1.14.0",
       "rev": "1801b0541f4fda118a10798fd3486bb7051c5dd6"
     }
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "7bcb9603a8894dc1c78751c31dfead8789712fb4"
+  },
+  "lib/safe-contracts": {
+    "rev": "8d6869a8fefeafc6bf62ed11c2f3c0f1f7f41844"
+  },
+  "lib/solady": {
+    "rev": "90db92ce173856605d24a554969f2c67cadbc7e9"
   }
 }

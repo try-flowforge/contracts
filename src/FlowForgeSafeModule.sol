@@ -43,7 +43,9 @@ contract FlowForgeSafeModule is Ownable, ReentrancyGuard {
         if (msg.sender != executor) revert NotExecutor();
     }
 
-    constructor(address _executor) Ownable(msg.sender) {
+    /// @param _executor Address allowed to call execTask (e.g. backend relayer).
+    /// @param _initialOwner Owner for setExecutor/setHook. Use address(0) to use msg.sender (e.g. when not using CREATE3).
+    constructor(address _executor, address _initialOwner) Ownable(_initialOwner != address(0) ? _initialOwner : msg.sender) {
         require(_executor != address(0), "Zero executor");
         executor = _executor;
     }
@@ -79,6 +81,7 @@ contract FlowForgeSafeModule is Ownable, ReentrancyGuard {
      * @param actionValue ETH value to send with the call.
      * @param actionData Calldata for the call.
      * @param operation 0 = CALL, 1 = DELEGATECALL (Safe enum).
+     * @param declaredUsdValue USD value of the action in 8 decimals (0 if not applicable).
      * @return success True if the Safe executed the transaction successfully.
      */
     function execTask(
@@ -86,10 +89,11 @@ contract FlowForgeSafeModule is Ownable, ReentrancyGuard {
         address actionTarget,
         uint256 actionValue,
         bytes calldata actionData,
-        uint8 operation
+        uint8 operation,
+        uint256 declaredUsdValue
     ) external nonReentrant onlyExecutor returns (bool success) {
         if (hook != address(0)) {
-            IExecutionHook(hook).beforeExecution(safeAddress, actionTarget, actionValue, actionData, operation);
+            IExecutionHook(hook).beforeExecution(safeAddress, actionTarget, actionValue, actionData, operation, declaredUsdValue);
         }
 
         IGnosisSafe safe = IGnosisSafe(safeAddress);
@@ -101,7 +105,7 @@ contract FlowForgeSafeModule is Ownable, ReentrancyGuard {
         }
 
         if (hook != address(0)) {
-            IExecutionHook(hook).afterExecution(safeAddress, actionTarget, actionValue, actionData, operation, ok);
+            IExecutionHook(hook).afterExecution(safeAddress, actionTarget, actionValue, actionData, operation, ok, declaredUsdValue);
         }
 
         if (!ok) {

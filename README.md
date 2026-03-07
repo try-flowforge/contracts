@@ -67,6 +67,19 @@ forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeCont
 forge script script/1_deployFlowForgeSafeContracts.s.sol:DeployFlowForgeSafeContractsL2 --broadcast
 ```
 
+### Deploy test contract
+
+```bash
+forge script script/2_deployFlowForgeTestContract.s.sol:DeployFlowForgeTestContract --broadcast
+```
+
+Add the deployed address to `deployments.json` or set `FLOWFORGE_TEST_CONTRACT` when running the full-flow test.
+
+## Testing
+
+- **FlowForgeDeployed** (`test/FlowForgeDeployed.t.sol`): view checks on deployed factory/module/policy. Run: `forge test --match-contract FlowForgeDeployed --fork-url $ARB_SEPOLIA_RPC_URL`.
+- **FlowForgeFullFlow** (`test/FlowForgeFullFlow.t.sol`): full flow on fork—create Safe, enable module, set policy, `execTask` to `FlowForgeTestContract`. Set `PRIVATE_KEY` (executor) and `FLOWFORGE_TEST_CONTRACT`, then: `forge test --match-contract FlowForgeFullFlow --fork-url $ARB_SEPOLIA_RPC_URL`.
+
 ## LICENSE
 
 [MIT License](LICENSE)

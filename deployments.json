@@ -1,11 +1,11 @@
 {
     "42161": {
-        "FlowForgeSafeFactory": "0x040b7cDfb1EEA1B47E4d2ae661DeDac720B2437f",
+        "FlowForgeSafeFactory": "0x3FDfF64f22A33BAea77e4F3696012963f9277E09",
         "FlowForgeSafeModule": "0x0788BF39d7d2E64528a899142bE37f2fA31d3993",
         "FlowForgeSpendingPolicy": "0x7134baF0259889eF182D89658C51483a6bC3d6c1"
     },
     "421614": {
-        "FlowForgeSafeFactory": "0x040b7cDfb1EEA1B47E4d2ae661DeDac720B2437f",
+        "FlowForgeSafeFactory": "0x3FDfF64f22A33BAea77e4F3696012963f9277E09",
         "FlowForgeSafeModule": "0x0788BF39d7d2E64528a899142bE37f2fA31d3993",
         "FlowForgeSpendingPolicy": "0x7134baF0259889eF182D89658C51483a6bC3d6c1"
     }

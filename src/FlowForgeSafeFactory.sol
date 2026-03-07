@@ -20,6 +20,12 @@ contract FlowForgeSafeFactory is Ownable {
     address public immutable SAFE_PROXY_FACTORY;
     address public immutable SAFE_SINGLETON;
 
+    /// @notice keccak256 of the on-chain SafeProxyFactory's actual deployment code
+    ///         (proxyCreationCode ++ uint256(singleton)). Fetched at construction so
+    ///         predictSafeAddress matches the real CREATE2 even when our local
+    ///         SafeProxy compilation differs from the canonical on-chain bytecode.
+    bytes32 public immutable PROXY_DEPLOY_CODE_HASH;
+
     /// @notice Address allowed to call createSafeWallet (e.g. backend relayer). Updatable by owner.
     address public executor;
 
@@ -44,6 +50,11 @@ contract FlowForgeSafeFactory is Ownable {
         SAFE_PROXY_FACTORY = _safeProxyFactory;
         SAFE_SINGLETON = _safeSingleton;
         executor = _executor;
+
+        bytes memory onChainCreationCode = SafeProxyFactory(_safeProxyFactory).proxyCreationCode();
+        PROXY_DEPLOY_CODE_HASH = keccak256(
+            abi.encodePacked(onChainCreationCode, uint256(uint160(_safeSingleton)))
+        );
     }
 
     /// @notice Set the executor (relayer). Only the owner can call this.
@@ -66,33 +77,30 @@ contract FlowForgeSafeFactory is Ownable {
     function createSafeWallet(address user) external onlyOwnerOrExecutor returns (address safeAddress) {
         require(user != address(0), "Zero user");
 
-        // Get the next saltNonce for this user
         uint256 saltNonce = userSaltNonces[user];
         userSaltNonces[user] = saltNonce + 1;
 
-        // Create owners array with the user as the sole owner
         address[] memory owners = new address[](1);
         owners[0] = user;
 
-        // Create initializer data for Safe setup
-        // This matches the Safe Core SDK's setup call signature
         bytes memory initializer = abi.encodeWithSignature(
             "setup(address[],uint256,address,bytes,address,address,uint256,address)",
-            owners, // _owners - list of Safe owners
-            1, // _threshold - number of required confirmations (1 for single owner)
-            address(0), // to - contract address for optional delegate call during setup
-            "", // data - data payload for optional delegate call
-            address(0), // fallbackHandler - handler for fallback calls to this contract
-            address(0), // paymentToken - token that should be used for payment (0 is ETH)
-            0, // payment - value that should be paid
-            address(0) // paymentReceiver - address that should receive the payment
+            owners, 1, address(0), "", address(0), address(0), 0, address(0)
         );
 
-        // Create Safe proxy using the SafeProxyFactory
-        // This uses CREATE2 for deterministic address generation based on:
-        // - safeSingleton address
-        // - initializer data
-        // - saltNonce
+        // Predict the real on-chain CREATE2 address using the canonical creation
+        // code hash (may differ from our locally-compiled SafeProxy bytecode).
+        address predicted = _predictWithOnChainCode(initializer, saltNonce);
+
+        // If a proxy already exists (e.g. from a previous factory deployment that
+        // used the same SafeProxyFactory + singleton + saltNonce), adopt it instead
+        // of calling createProxyWithNonce which would revert with "Create2 call failed".
+        if (predicted.code.length > 0) {
+            userSafeWallets[user].push(predicted);
+            emit SafeWalletCreated(user, predicted, saltNonce);
+            return predicted;
+        }
+
         SafeProxyFactory factory = SafeProxyFactory(SAFE_PROXY_FACTORY);
         SafeProxy safeProxy = factory.createProxyWithNonce(SAFE_SINGLETON, initializer, saltNonce);
 
@@ -135,12 +143,9 @@ contract FlowForgeSafeFactory is Ownable {
 
     /**
      * @notice Calculates the predicted address for a user's next Safe wallet.
-     * @dev This matches the Safe Core SDK's address prediction logic using CREATE2.
-     *      The address is deterministic based on:
-     *      - SafeProxyFactory address
-     *      - Safe singleton address
-     *      - Initializer data (which includes the user's address)
-     *      - saltNonce (user's current saltNonce)
+     * @dev Uses PROXY_DEPLOY_CODE_HASH (fetched from the canonical on-chain
+     *      SafeProxyFactory at deploy time) so the prediction matches the real
+     *      CREATE2 address regardless of local Solidity compiler version.
      * @param user The user who will own the Safe wallet.
      * @return predictedAddress The predicted address of the next Safe wallet.
      */
@@ -149,26 +154,20 @@ contract FlowForgeSafeFactory is Ownable {
 
         uint256 saltNonce = userSaltNonces[user];
 
-        // Create owners array with the user as the sole owner
         address[] memory owners = new address[](1);
         owners[0] = user;
 
-        // Create the same initializer that will be used during deployment
         bytes memory initializer = abi.encodeWithSignature(
             "setup(address[],uint256,address,bytes,address,address,uint256,address)",
-            owners,
-            1,
-            address(0),
-            "",
-            address(0),
-            address(0),
-            0,
-            address(0)
+            owners, 1, address(0), "", address(0), address(0), 0, address(0)
         );
 
-        // Calculate salt following SafeProxyFactory's logic
+        predictedAddress = _predictWithOnChainCode(initializer, saltNonce);
+    }
+
+    /// @dev Compute the real CREATE2 address the canonical SafeProxyFactory will use.
+    function _predictWithOnChainCode(bytes memory initializer, uint256 saltNonce) internal view returns (address predicted) {
         bytes32 salt;
-        bytes memory deploymentCode = abi.encodePacked(type(SafeProxy).creationCode, uint256(uint160(SAFE_SINGLETON)));
         assembly {
             let inner := keccak256(add(initializer, 32), mload(initializer))
             mstore(0x80, inner)
@@ -176,17 +175,16 @@ contract FlowForgeSafeFactory is Ownable {
             salt := keccak256(0x80, 64)
         }
 
-        // Calculate CREATE2 address: keccak256(0xff ++ factory ++ salt ++ keccak256(deploymentCode))
         address factory_ = SAFE_PROXY_FACTORY;
+        bytes32 codeHash = PROXY_DEPLOY_CODE_HASH;
         bytes32 hash;
         assembly {
-            let codeHash := keccak256(add(deploymentCode, 32), mload(deploymentCode))
             mstore(0x80, or(shl(248, 0xff), shl(96, factory_)))
             mstore(0xa0, salt)
             mstore(0xc0, codeHash)
             hash := keccak256(0x80, 85)
         }
 
-        predictedAddress = address(uint160(uint256(hash)));
+        predicted = address(uint160(uint256(hash)));
     }
 }

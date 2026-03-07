@@ -166,25 +166,16 @@ contract FlowForgeSafeFactory is Ownable {
     }
 
     /// @dev Compute the real CREATE2 address the canonical SafeProxyFactory will use.
+    ///      Uses Solidity builtins instead of raw assembly to avoid corrupting
+    ///      caller-allocated memory (e.g. the initializer bytes).
     function _predictWithOnChainCode(bytes memory initializer, uint256 saltNonce) internal view returns (address predicted) {
-        bytes32 salt;
-        assembly {
-            let inner := keccak256(add(initializer, 32), mload(initializer))
-            mstore(0x80, inner)
-            mstore(0xa0, saltNonce)
-            salt := keccak256(0x80, 64)
-        }
-
-        address factory_ = SAFE_PROXY_FACTORY;
-        bytes32 codeHash = PROXY_DEPLOY_CODE_HASH;
-        bytes32 hash;
-        assembly {
-            mstore(0x80, or(shl(248, 0xff), shl(96, factory_)))
-            mstore(0xa0, salt)
-            mstore(0xc0, codeHash)
-            hash := keccak256(0x80, 85)
-        }
-
+        bytes32 salt = keccak256(abi.encodePacked(keccak256(initializer), saltNonce));
+        bytes32 hash = keccak256(abi.encodePacked(
+            bytes1(0xff),
+            SAFE_PROXY_FACTORY,
+            salt,
+            PROXY_DEPLOY_CODE_HASH
+        ));
         predicted = address(uint160(uint256(hash)));
     }
 }

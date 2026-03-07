@@ -22,7 +22,7 @@ contract DeployFlowForgeSafeContractsL1 is Script {
     address ownerAddress = vm.addr(deployerPrivateKey);
     string rpcUrl = vm.envString("ETH_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_3");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_4");
     bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_2");
     bytes32 constant SPENDING_POLICY_SALT = keccak256("FlowForgeSpendingPolicy_v1_2");
 
@@ -70,7 +70,7 @@ contract DeployFlowForgeSafeContractsL2 is Script {
     address ownerAddress = vm.addr(deployerPrivateKey);
     string rpcUrl = vm.envString("ARB_RPC_URL");
 
-    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_3");
+    bytes32 constant FACTORY_SALT = keccak256("FlowForgeSafeFactory_v1_4");
     bytes32 constant MODULE_SALT = keccak256("FlowForgeSafeModule_v1_2");
     bytes32 constant SPENDING_POLICY_SALT = keccak256("FlowForgeSpendingPolicy_v1_2");
 
